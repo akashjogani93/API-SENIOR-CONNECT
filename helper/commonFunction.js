@@ -53,7 +53,6 @@ const commonFunction = {
                 throw new Error("Either userId or phoneNumber is required");
             }
 
-            // 🔐 Generate 6-digit OTP
             const otp = Math.floor(100000 + Math.random() * 900000);
 
             const insertPayload = {
@@ -65,7 +64,7 @@ const commonFunction = {
             }
 
             if (phoneNumber) {
-                insertPayload.phone_number = phoneNumber;
+                insertPayload.phone = phoneNumber;
             }
 
             const query = `INSERT INTO otp SET ?`;
@@ -81,49 +80,7 @@ const commonFunction = {
             throw err;
         }
     },
-
-    async sendSMS(phoneNumber, message) {
-        try {
-            const SMS_API_URL = "https://www.alots.in/sms-panel/api/http/index.php";
-
-            const params = {
-                username: "THANGIV",
-                apikey: "6F5F5-7AE2B",
-                apirequest: "Text",
-                sender: "THANGV",
-                mobile: phoneNumber,
-                message: message,
-                route: "TRANS",
-                TemplateID: "1707176958944181442",
-                format: "JSON"
-            };
-
-            const response = await axios.get(SMS_API_URL, { params });
-
-            return response.data;
-
-        } catch (error) {
-            console.error("SMS sending failed:", error.response?.data || error.message);
-            throw error;
-        }
-    },
-
-    async saveLoginHistory(userId, activity, next) {
-        try {
-            const query = `
-                INSERT INTO login_history (user_id, activity)
-                VALUES (?, ?)
-            `;
-
-            await insertData(query, [userId, activity], next);
-            return true;
-
-        } catch (err) {
-            if (typeof next === "function") return next(err);
-            throw err;
-        }
-    },
-
+    
     async generateOrderId(preFix = "") {
         const timePart = Date.now().toString(36).toUpperCase(); // shorter time
         const randomPart = crypto.randomBytes(3).toString("base64url").toUpperCase().slice(0, 4);
@@ -132,8 +89,6 @@ const commonFunction = {
 
         return `${preFix}_${unique}`;
     }
-
-
 }
 
 

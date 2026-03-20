@@ -10,18 +10,16 @@ const isServer = (process.env.SERVER_HOST !== true);
 
 const credentil = isServer
     ? {
-        host: "194.164.151.204",
-        user: "thangiveTest",
-        password: "thangiveTest@@@123",
-        database: "thangiveTest",
-        port: 3306,
-        ssl: { rejectUnauthorized: false }
+        host: "localhost",
+        user: "root",
+        password: "",
+        database: "senior_connect",
     }
     : {
         host: "localhost",
         user: "root",
         password: "",
-        database: "thangi"
+        database: "senior_connect"
     };
 
 let con;
