@@ -18,6 +18,7 @@ router.post('/forgotPassword', forms, servicesController.forgotPassword);
 router.post('/otpVerification', forms, servicesController.verifyOtp);
 router.post('/changePassword', forms, servicesController.changePassword);
 
-router.post('/invitation', forms, userController.addUpdateInvitation);
+router.post('/invitation',auth, forms, userController.addUpdateInvitation);
+router.get('/invitation', forms, userController.InvitationList);
 
 export default router;

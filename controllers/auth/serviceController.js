@@ -22,7 +22,7 @@ const servicesController = {
             }
 
             // ---------- Get user ----------
-            const query = `SELECT user_id,email,phone,password FROM users WHERE is_deleted=0 AND email='${value.email}'`;
+            const query = `SELECT * FROM users WHERE is_deleted=0 AND email='${value.email}'`;
             const users = await getData(query, next);
             if (!users || users.length === 0) {
                 return next(CustomErrorHandler.wrongCredentials());

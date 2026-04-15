@@ -15,7 +15,7 @@ const userController = {
                 name: Joi.string().required(),
                 email: Joi.string().email().required(),
                 phone: Joi.string().required(),
-                password: Joi.string().required(),
+                password: Joi.string().optional(),
                 business_type: Joi.string()
                     .valid('hospital', 'caretaker', 'medical_store', 'volunteer')
                     .when('role', {
@@ -85,13 +85,18 @@ const userController = {
         try {
             // ------------------ Validation Schema ------------------
             const baseSchema = Joi.object({
-                invitation_id: Joi.number().integer().optional(),
+                Invitation_id: Joi.number().integer().optional(),
                 user_id: Joi.number().required(),
                 title: Joi.string().max(150).required(),
                 event_type: Joi.string().valid('Social Gatherings', 'Educational', 'Health & Wellness', 'Hobbies', 'religious', 'community', 'Other').required(),
                 event_date: Joi.date().required(),
                 description: Joi.string().required(),
                 city: Joi.string().required(),
+                address: Joi.string().allow('', null).optional(),
+                status: Joi.string()
+                    .valid('Upcoming', 'Ongoing', 'Completed', 'Cancelled')
+                    .optional(),
+
                 is_deleted: Joi.number().valid(0, 1).optional()
             });
 
@@ -115,9 +120,9 @@ const userController = {
             // ------------------ Insert / Update ------------------
             let query = "";
 
-            if (dataObj.invitation_id) {
+            if (dataObj.Invitation_id) {
                 dataObj.updated_at = currentTime;
-                query = `UPDATE invitations SET ? WHERE invitation_id='${dataObj.invitation_id}'`;
+                query = `UPDATE invitations SET ? WHERE Invitation_id='${dataObj.Invitation_id}'`;
             } else {
                 dataObj.created_at = currentTime;
                 dataObj.updated_at = currentTime;
@@ -127,15 +132,101 @@ const userController = {
             const result = await insertData(query, dataObj, next);
 
             // if (result.insertId) {
-            //     dataObj.invitation_id = result.insertId;
+            //     dataObj.Invitation_id = result.insertId;
             // }
 
             return res.json({
                 success: true,
-                message: dataObj.invitation_id
+                message: dataObj.Invitation_id
                     ? "Invitation updated successfully"
                     : "Invitation created successfully",
                 data: dataObj
+            });
+
+        } catch (error) {
+            next(error);
+        }
+    },
+    async InvitationList(req, res, next) {
+        try {
+            /* ------------------ Base Query ------------------ */
+            let query = `
+                SELECT 
+                    invitations.*, 
+                    users.name AS user_name
+                FROM invitations
+                LEFT JOIN users ON users.user_id = invitations.user_id
+                WHERE invitations.is_deleted = 0
+            `;
+            let cond = '';
+            let page = { pageQuery: '' };
+
+            /* ------------------ Validation Schema ------------------ */
+            const schema = Joi.object({
+                Invitation_id: Joi.number().integer().optional(),
+                user_id: Joi.number().integer().optional(),
+                title: Joi.string().optional(),
+                event_type: Joi.string().optional(),
+                city: Joi.string().optional(),
+                event_date: Joi.date().optional(),
+                pagination: Joi.boolean().optional(),
+                current_page: Joi.number().integer().optional(),
+                per_page_records: Joi.number().integer().optional(),
+            });
+
+            const { error } = schema.validate(req.query);
+            if (error) return next(error);
+
+            /* ------------------ Filters ------------------ */
+
+            if (req.query.user_id) {
+                cond += ` AND invitations.user_id = ${req.query.user_id}`;
+            } else {
+                cond += ` AND status != 'Completed'`;
+            }
+
+            if (req.query.Invitation_id) {
+                cond += ` AND Invitation_id = ${req.query.Invitation_id}`;
+            }
+
+            if (req.query.title) {
+                cond += ` AND title LIKE '%${req.query.title}%'`;
+            }
+
+            if (req.query.event_type) {
+                cond += ` AND event_type = '${req.query.event_type}'`;
+            }
+
+            if (req.query.city) {
+                cond += ` AND invitations.city LIKE '%${req.query.city}%'`;
+            }
+
+            if (req.query.event_date) {
+                cond += ` AND DATE(event_date) = '${req.query.event_date}'`;
+            }
+
+            /* ------------------ Pagination ------------------ */
+            if (req.query.pagination) {
+                page = await paginationQuery(
+                    query + cond,
+                    next,
+                    req.query.current_page,
+                    req.query.per_page_records
+                );
+            }
+
+            query += cond + page.pageQuery;
+
+            const data = await getData(query, next);
+
+            return res.json({
+                success: true,
+                message: "Invitation list fetched successfully",
+                total_records: page.total_rec ?? data.length,
+                number_of_pages: page.number_of_pages || 1,
+                currentPage: page.currentPage || 1,
+                records: data.length,
+                data: data
             });
 
         } catch (error) {
