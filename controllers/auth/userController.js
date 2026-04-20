@@ -232,6 +232,73 @@ const userController = {
         } catch (error) {
             next(error);
         }
+    },
+    async userList(req, res, next) {
+        try {
+            /* ------------------ Base Query ------------------ */
+            let query = `SELECT * FROM users WHERE is_deleted = 0`;
+            let cond = '';
+            let page = { pageQuery: '' };
+
+            /* ------------------ Validation ------------------ */
+            const schema = Joi.object({
+                user_id: Joi.number().integer().optional(),
+                role: Joi.string().valid('senior', 'provider').optional(),
+                business_type: Joi.string().optional(),
+                city: Joi.string().optional(),
+                pagination: Joi.boolean().optional(),
+                current_page: Joi.number().integer().optional(),
+                per_page_records: Joi.number().integer().optional(),
+            });
+
+            const { error } = schema.validate(req.query);
+            if (error) return next(error);
+
+            /* ------------------ Filters ------------------ */
+
+            if (req.query.user_id) {
+                cond += ` AND user_id = ${req.query.user_id}`;
+            }
+
+            if (req.query.role) {
+                cond += ` AND role = '${req.query.role}'`;
+            }
+
+            if (req.query.business_type) {
+                cond += ` AND business_type = '${req.query.business_type}'`;
+            }
+
+            if (req.query.city) {
+                cond += ` AND city LIKE '%${req.query.city}%'`;
+            }
+
+            /* ------------------ Pagination ------------------ */
+            if (req.query.pagination) {
+                page = await paginationQuery(
+                    query + cond,
+                    next,
+                    req.query.current_page,
+                    req.query.per_page_records
+                );
+            }
+
+            query += cond + page.pageQuery;
+
+            const data = await getData(query, next);
+
+            return res.json({
+                success: true,
+                message: "User list fetched successfully",
+                total_records: page.total_rec ?? data.length,
+                number_of_pages: page.number_of_pages || 1,
+                currentPage: page.currentPage || 1,
+                records: data.length,
+                data: data
+            });
+
+        } catch (error) {
+            next(error);
+        }
     }
 }
 
