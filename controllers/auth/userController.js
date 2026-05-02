@@ -149,6 +149,14 @@ const userController = {
     },
     async InvitationList(req, res, next) {
         try {
+
+            await getData(`
+                UPDATE invitations 
+                SET status = 'Completed'
+                WHERE DATE(event_date) < CURDATE()
+                AND status != 'Completed'
+            `, next);
+
             /* ------------------ Base Query ------------------ */
             let query = `
                 SELECT 
